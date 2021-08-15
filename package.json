@@ -1,6 +1,6 @@
 {
 	"name": "cordova-plugin-v2ray",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"license": "MIT",
 	"scripts": {
 		"parcel:build": "NODE_ENV=production parcel build --no-source-maps --no-content-hash --dist-dir www src/www/index.ts",
