@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "lib": ["ES2015", "DOM"],
+        "sourceMap": false,
+        "removeComments": true,
+        "outDir": "www",
+        "declaration": true,
+        "declarationDir": "types"
+    },
+    "files": [
+        "src/www/index.ts"
+    ]
+}

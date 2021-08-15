@@ -1,0 +1,19 @@
+{
+	"name": "cordova-plugin-v2ray",
+	"version": "0.1.0",
+	"license": "MIT",
+	"scripts": {
+		"parcel:build": "NODE_ENV=production parcel build --no-source-maps --no-content-hash --dist-dir www src/www/index.ts",
+		"tsc:build": "tsc --emitDeclarationOnly",
+		"build": "npm run parcel:build && npm run tsc:build"
+	},
+	"main": "www/index.js",
+	"types": "types/index.d.ts",
+	"devDependencies": {
+		"@parcel/packager-ts": "^2.0.0-rc.0",
+		"@parcel/transformer-typescript-types": "^2.0.0-rc.0",
+		"@types/cordova": "0.0.34",
+		"parcel": "^2.0.0-rc.0",
+		"typescript": "^4.3.5"
+	}
+}
