@@ -1,54 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
-        id="cordova-plugin-v2ray" version="0.1.0">
+        id="cordova-plugin-v2ray" version="0.2.0">
     <name>V2Ray</name>
     <description>Cordova V2ray Plugin</description>
     <license>MIT</license>
     <keywords>cordova,v2ray,vpn,proxy</keywords>
     <js-module src="www/index.js" name="v2ray">
-		<clobbers target="window.v2ray" />
-	</js-module>
+        <clobbers target="window.v2ray" />
+    </js-module>
+    <dependency id="es6-promise-plugin" version="^4.1.0" />
     <platform name="android">
-		<config-file target="config.xml" parent="/*">
-			<feature name="V2Ray">
-				<param name="android-package" value="io.github.fi4ir.cordova.v2ray.V2RayPlugin"/>
-			</feature>
-		</config-file>
-		<config-file target="AndroidManifest.xml" parent="/manifest/application">
-			<service
-				android:name="io.github.fi4ir.cordova.v2ray.V2RayVpnService"
-				android:permission="android.permission.BIND_VPN_SERVICE"
-				android:process=":RunSoLibV2RayDaemon">
-				<intent-filter>
-					<action android:name="android.net.VpnService" />
-				</intent-filter>
-				<meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
-					android:value="true"/>
-			</service>
-		</config-file>
-		<config-file target="AndroidManifest.xml" parent="/*">
-			<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-			<uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
-			<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-			<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-		</config-file>
+        <config-file target="config.xml" parent="/*">
+            <feature name="V2Ray">
+                <param name="android-package" value="io.github.fi4ir.cordova.v2ray.V2RayPlugin"/>
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service
+                android:name="io.github.fi4ir.cordova.v2ray.V2RayVpnService"
+                android:permission="android.permission.BIND_VPN_SERVICE"
+                android:process=":RunSoLibV2RayDaemon">
+                <intent-filter>
+                    <action android:name="android.net.VpnService" />
+                </intent-filter>
+                <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                    android:value="true"/>
+            </service>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+            <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+        </config-file>
 
 
 
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/ActionCallback.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/IActionCallback.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/ServerConfig.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/Utils.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/V2RayConfig.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/V2RayPlugin.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/V2RayVpnService.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/io/github/fi4ir/cordova/v2ray/VpnStatus.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
-		<source-file src="src/android/jniLibs/arm64-v8a/libtun2socks.so" target-dir="src/main/jniLibs/arm64-v8a" />
-		<source-file src="src/android/jniLibs/armeabi-v7a/libtun2socks.so" target-dir="src/main/jniLibs/armeabi-v7a" />
-		<source-file src="src/android/jniLibs/x86/libtun2socks.so" target-dir="src/main/jniLibs/x86" />
-		<source-file src="src/android/jniLibs/x86_64/libtun2socks.so" target-dir="src/main/jniLibs/x86_64" />
-		<source-file src="src/android/libs/libv2ray.aar" target-dir="libs" />
-		<framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
-	</platform>
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/ActionCallback.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/IActionCallback.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/ServerConfig.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/Utils.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/V2RayConfig.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/V2RayPlugin.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/V2RayVpnService.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/io/github/fi4ir/cordova/v2ray/VpnStatus.java" target-dir="src/io/github/fi4ir/cordova/v2ray" />
+        <source-file src="src/android/jniLibs/arm64-v8a/libtun2socks.so" target-dir="src/main/jniLibs/arm64-v8a" />
+        <source-file src="src/android/jniLibs/armeabi-v7a/libtun2socks.so" target-dir="src/main/jniLibs/armeabi-v7a" />
+        <source-file src="src/android/jniLibs/x86/libtun2socks.so" target-dir="src/main/jniLibs/x86" />
+        <source-file src="src/android/jniLibs/x86_64/libtun2socks.so" target-dir="src/main/jniLibs/x86_64" />
+        <source-file src="src/android/libs/libv2ray.aar" target-dir="libs" />
+        <framework src="src/android/build-extras.gradle" custom="true" type="gradleReference" />
+    </platform>
 
 </plugin>

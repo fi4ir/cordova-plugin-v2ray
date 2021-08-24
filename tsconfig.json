@@ -2,7 +2,7 @@
     "compilerOptions": {
         "module": "commonjs",
         "target": "es5",
-        "lib": ["ES2015", "DOM"],
+        "lib": ["ES2015", "DOM", "ES2015.Promise"],
         "sourceMap": false,
         "removeComments": true,
         "outDir": "www",

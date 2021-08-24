@@ -19,6 +19,7 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import go.Seq;
@@ -34,6 +35,7 @@ public class V2RayVpnService extends VpnService {
     public static final int MSG_START = 4;
     public static final int MSG_STOP = 5;
     public static final int MSG_GET_STATUS = 6;
+    public static final int MSG_QUERY_STATS = 7;
 
 
     ArrayList<Messenger> clients = new ArrayList<>();
@@ -85,6 +87,9 @@ public class V2RayVpnService extends VpnService {
     }
 
     protected void start(V2RayConfig config, ServerConfig serverConfig) {
+        if (this.status != VpnStatus.STOPPED) {
+            return;
+        }
         this.setStatus(VpnStatus.STARTING);
         this.v2rayPoint = Libv2ray.newV2RayPoint(new V2RayCallback());
         Seq.setContext(getApplicationContext());
@@ -107,7 +112,7 @@ public class V2RayVpnService extends VpnService {
     }
 
     protected void stop() {
-        if (this.status != VpnStatus.STOPPED) {
+        if (this.status != VpnStatus.STOPPED && this.status != VpnStatus.STOPING) {
             setStatus(VpnStatus.STOPING);
             if (this.v2rayPoint.getIsRunning()) {
                 try {
@@ -118,6 +123,11 @@ public class V2RayVpnService extends VpnService {
             }
             setStatus(VpnStatus.STOPPED);
             stopSelf();
+            try {
+                mInterface.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -158,6 +168,13 @@ public class V2RayVpnService extends VpnService {
                 }
             }
         }).start();
+    }
+
+    protected long queryStats(String tag, String direct) {
+        if (this.v2rayPoint == null || !this.v2rayPoint.getIsRunning()) {
+            return 0;
+        }
+        return this.v2rayPoint.queryStats(tag, direct);
     }
 
     protected void notifyClients(Message message) {
@@ -243,17 +260,18 @@ public class V2RayVpnService extends VpnService {
                 case MSG_UNREGISTER_CLIENT:
                     clients.remove(msg.replyTo);
                     break;
-                case MSG_START:
+                case MSG_START: {
                     V2RayConfig config = msg.getData().getParcelable("v2ray-config");
                     ServerConfig serverConfig = msg.getData().getParcelable("server-config");
                     if (config != null && serverConfig != null) {
                         start(config, serverConfig);
                     }
                     break;
+                }
                 case MSG_STOP:
                     stop();
                     break;
-                case MSG_GET_STATUS:
+                case MSG_GET_STATUS: {
                     Message reply = Message.obtain(null, MSG_CHANGE_STATUS);
                     Bundle data = new Bundle();
                     data.putInt("oldStatus", status.ordinal());
@@ -265,6 +283,21 @@ public class V2RayVpnService extends VpnService {
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
+                    break;
+                }
+                case MSG_QUERY_STATS: {
+                    Bundle data = msg.getData();
+                    data.putLong("stats", queryStats(data.getString("tag"), data.getString("direct")));
+                    Message reply = Message.obtain(null, MSG_QUERY_STATS);
+                    reply.replyTo = messenger;
+                    reply.setData(data);
+                    try {
+                        msg.replyTo.send(reply);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
                 default:
                     super.handleMessage(msg);
             }

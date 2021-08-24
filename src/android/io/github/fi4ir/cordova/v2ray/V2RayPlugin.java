@@ -1,21 +1,32 @@
 package io.github.fi4ir.cordova.v2ray;
 
+import static io.github.fi4ir.cordova.v2ray.V2RayVpnService.MSG_CHANGE_STATUS;
+import static io.github.fi4ir.cordova.v2ray.V2RayVpnService.MSG_QUERY_STATS;
+import static io.github.fi4ir.cordova.v2ray.V2RayVpnService.MSG_STOP;
+import static io.github.fi4ir.cordova.v2ray.V2RayVpnService.MSG_UNREGISTER_CLIENT;
+import static io.github.fi4ir.cordova.v2ray.V2RayVpnService.TAG;
+
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.VpnService;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class V2RayPlugin extends CordovaPlugin {
@@ -25,6 +36,7 @@ public class V2RayPlugin extends CordovaPlugin {
     protected IActionCallback stopCb;
     protected IActionCallback statusCb;
     protected IActionCallback watchStatusCb;
+    protected List<IActionCallback> queryStatsCb = new ArrayList<>();
     Messenger service;
     VpnStatus serviceStatus = null;
     final Messenger messenger = new Messenger(new IncomingHandler());
@@ -113,6 +125,7 @@ public class V2RayPlugin extends CordovaPlugin {
                     callbackContext.error(resultCode);
                 }
             });
+            return true;
         } else if (action.equals("status")) {
             if (this.serviceStatus != null) {
                 callbackContext.success(this.serviceStatus.ordinal());
@@ -129,6 +142,7 @@ public class V2RayPlugin extends CordovaPlugin {
                     callbackContext.error(resultCode);
                 }
             };
+            return true;
         } else if (action.equals("watch-status")) {
             this.watchStatusCb = new ActionCallback() {
                 @Override
@@ -141,6 +155,28 @@ public class V2RayPlugin extends CordovaPlugin {
                     callbackContext.error(resultCode);
                 }
             };
+            return true;
+        } else if (action.equals("query-stats")) {
+            if (args.length() != 2) {
+                callbackContext.error("Invalid args");
+                return false;
+            }
+            try {
+                this.queryStats(args.getString(0), args.getString(1), new ActionCallback(callbackContext.getCallbackId()) {
+                    @Override
+                    public void onSuccess(long data) {
+                        callbackContext.success(Long.valueOf(data).toString());
+                    }
+
+                    @Override
+                    public void onError(int resultCode) {
+                        callbackContext.error(resultCode);
+                    }
+                });
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return true;
         }
         return false;
     }
@@ -175,7 +211,7 @@ public class V2RayPlugin extends CordovaPlugin {
     }
 
     public void stop(IActionCallback cb) {
-        Message message = Message.obtain(null, V2RayVpnService.MSG_STOP);
+        Message message = Message.obtain(null, MSG_STOP);
         message.replyTo = messenger;
         try {
             stopCb = cb;
@@ -186,6 +222,28 @@ public class V2RayPlugin extends CordovaPlugin {
         }
     }
 
+    public void queryStats(String tag, String direct, IActionCallback cb) {
+        if (cb.getID() == null) {
+            throw new RuntimeException("callback must have an Id");
+        }
+        Bundle data = new Bundle();
+        data.putString("tag", tag);
+        data.putString("direct", direct);
+        data.putString("callback-id", cb.getID());
+        Message message = Message.obtain(null, MSG_QUERY_STATS);
+        message.replyTo = messenger;
+        message.setData(data);
+
+        try {
+            service.send(message);
+            this.queryStatsCb.add(cb);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            cb.onError(512);
+        }
+    }
+
+    @Override
     public void onStart() {
         bindService();
     }
@@ -193,6 +251,7 @@ public class V2RayPlugin extends CordovaPlugin {
     @Override
     public void onStop() {
         unbindService();
+        this.resetCallbacks();
     }
 
     @Override
@@ -217,7 +276,7 @@ public class V2RayPlugin extends CordovaPlugin {
         if (bound) {
             if (service != null) {
                 try {
-                    Message msg = Message.obtain(null, V2RayVpnService.MSG_UNREGISTER_CLIENT);
+                    Message msg = Message.obtain(null, MSG_UNREGISTER_CLIENT);
                     msg.replyTo = messenger;
                     service.send(msg);
                 } catch (RemoteException e) {
@@ -230,13 +289,36 @@ public class V2RayPlugin extends CordovaPlugin {
         }
     }
 
+    protected IActionCallback popCallbackByID(String id, List<IActionCallback> cbs) {
+        if (id == null) {
+            return null;
+        }
+        for (int x = 0, l = cbs.size(); x < l; x++) {
+            IActionCallback i = cbs.get(x);
+            if (i.getID() != null && i.getID().equals(id)) {
+                cbs.remove(x);
+                return i;
+            }
+        }
+        return null;
+    }
+
+    protected void resetCallbacks() {
+        this.prepareCb = null;
+        this.queryStatsCb.clear();
+        this.statusCb = null;
+        this.watchStatusCb = null;
+        this.startCb = null;
+        this.stopCb = null;
+    }
 
     class IncomingHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case V2RayVpnService.MSG_CHANGE_STATUS:
+                case MSG_CHANGE_STATUS: {
                     VpnStatus newStatus = VpnStatus.fromInt(msg.getData().getInt("newStatus"));
+                    serviceStatus = newStatus;
                     if (newStatus == null) {
                         return;
                     }
@@ -258,6 +340,18 @@ public class V2RayPlugin extends CordovaPlugin {
                             stopCb = null;
                         }
                     }
+                    break;
+                }
+                case MSG_QUERY_STATS: {
+                    Bundle data = msg.getData();
+                    long result = data.getLong("stats");
+                    String cbID = data.getString("callback-id");
+                    IActionCallback cb = popCallbackByID(cbID, queryStatsCb);
+                    if (cb != null) {
+                        cb.onSuccess(result);
+                    }
+                    break;
+                }
                 default:
                     super.handleMessage(msg);
             }
